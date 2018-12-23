@@ -775,7 +775,6 @@ def create_experiment(
       use_validation_monitor=use_validation_monitor,
       validation_monitor_kwargs=validation_monitor_kwargs,
       use_early_stopping=use_early_stopping,
-      early_stopping_kwargs=early_stopping_kwargs)
       early_stopping_kwargs=early_stopping_kwargs,
       use_benchmark=benchmark_steps > 0,
       benchmark_kwargs=benchmark_kwargs)
