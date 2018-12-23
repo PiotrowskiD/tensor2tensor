@@ -32,6 +32,7 @@ from tensor2tensor.utils import metrics_hook
 from tensor2tensor.utils import mlperf_log
 from tensor2tensor.utils import registry
 from tensor2tensor.utils import t2t_model
+from tensor2tensor.utils import benchmark_hook
 
 import tensorflow as tf
 
@@ -368,7 +369,9 @@ def create_hooks(use_tfdbg=False,
                  use_validation_monitor=False,
                  validation_monitor_kwargs=None,
                  use_early_stopping=False,
-                 early_stopping_kwargs=None):
+                 early_stopping_kwargs=None,
+                 use_benchmark=False,
+                 benchmark_kwargs=None):
   """Create train and eval hooks for Experiment."""
   train_hooks = []
   eval_hooks = []
@@ -378,6 +381,11 @@ def create_hooks(use_tfdbg=False,
     train_hooks.append(hook)
     eval_hooks.append(hook)
 
+    if use_benchmark:
+      tf.logging.info("Using BenchmarkHook")
+      hook = benchmark_hook.BenchmarkHook(**benchmark_kwargs)
+      train_hooks.append(hook)
+    
   if use_dbgprofile:
     # Recorded traces can be visualized with chrome://tracing/
     # The memory/tensor lifetime is also profiled
@@ -668,6 +676,9 @@ def create_experiment(
     additional_train_hooks=None,
     additional_eval_hooks=None,
     warm_start_from=None,
+    benchmark_steps=None,
+    benchmark_log_steps=None,
+    warmup_steps=None):
     decode_from_file=None,
     decode_to_file=None,
     decode_reference=None,
@@ -736,6 +747,12 @@ def create_experiment(
       plateau_decrease=eval_early_stopping_metric_minimize,
       plateau_delta=eval_early_stopping_metric_delta,
       every_n_steps=min_eval_frequency)
+  benchmark_kwargs = dict(
+      steps=benchmark_steps,
+      warmup_steps=warmup_steps,
+      log_steps=benchmark_log_steps,
+      batch_size=hparams.batch_size
+  )
 
   # Eval on TPU Pods is not supported yet
   if use_tpu and run_config.tpu_config.num_shards > 8 and "eval" in schedule:
@@ -759,6 +776,9 @@ def create_experiment(
       validation_monitor_kwargs=validation_monitor_kwargs,
       use_early_stopping=use_early_stopping,
       early_stopping_kwargs=early_stopping_kwargs)
+      early_stopping_kwargs=early_stopping_kwargs,
+      use_benchmark=benchmark_steps > 0,
+      benchmark_kwargs=benchmark_kwargs)
 
   hook_context = HookContext(
       estimator=estimator, problem=problem, hparams=hparams)
