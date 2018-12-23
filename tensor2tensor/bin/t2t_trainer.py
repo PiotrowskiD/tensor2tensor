@@ -70,7 +70,7 @@ flags.DEFINE_integer("intra_op_parallelism_threads", 0,
                      "Number of intra_op_parallelism_threads to use for CPU. "
                      "See TensorFlow config.proto for details.")
 flags.DEFINE_integer("log_level", tf.logging.INFO,
-                     "Sets the threshold for what messages will be logged - default 20 (INFO)"
+                     "Sets the threshold for what messages will be logged - default 20 (INFO)")
 # TODO(lukaszkaiser): resolve memory and variable assign issues and set to True.
 flags.DEFINE_bool(
     "optionally_use_dist_strat", False,
