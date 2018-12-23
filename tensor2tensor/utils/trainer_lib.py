@@ -381,10 +381,7 @@ def create_hooks(use_tfdbg=False,
     train_hooks.append(hook)
     eval_hooks.append(hook)
 
-    if use_benchmark:
-      tf.logging.info("Using BenchmarkHook")
-      hook = benchmark_hook.BenchmarkHook(**benchmark_kwargs)
-      train_hooks.append(hook)
+  
     
   if use_dbgprofile:
     # Recorded traces can be visualized with chrome://tracing/
@@ -407,6 +404,11 @@ def create_hooks(use_tfdbg=False,
     train_hooks.append(hook)
     eval_hooks.append(hook)
 
+  if use_benchmark:
+    tf.logging.info("Using BenchmarkHook")
+    hook = benchmark_hook.BenchmarkHook(**benchmark_kwargs)
+    train_hooks.append(hook)  
+    
   return train_hooks, eval_hooks
 
 
