@@ -369,7 +369,7 @@ def run_std_server():
 
 
 def main(argv):
-  tf.logging.set_verbosity(FLAGS.log_level)
+  tf.logging.set_verbosity(tf.logging.INFO)
 
   usr_dir.import_usr_dir(FLAGS.t2t_usr_dir)
 
