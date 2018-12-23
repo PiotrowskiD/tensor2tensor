@@ -69,6 +69,8 @@ flags.DEFINE_integer("inter_op_parallelism_threads", 0,
 flags.DEFINE_integer("intra_op_parallelism_threads", 0,
                      "Number of intra_op_parallelism_threads to use for CPU. "
                      "See TensorFlow config.proto for details.")
+flags.DEFINE_integer("log_level", tf.logging.INFO,
+                     "Sets the threshold for what messages will be logged - default 20 (INFO)"
 # TODO(lukaszkaiser): resolve memory and variable assign issues and set to True.
 flags.DEFINE_bool(
     "optionally_use_dist_strat", False,
@@ -80,7 +82,7 @@ flags.DEFINE_bool(
 try:
   flags.DEFINE_string("master", "", "Address of TensorFlow master.")
   flags.DEFINE_string("output_dir", "", "Base output directory for run.")
-  flags.DEFINE_string("schedule", "continuous_train_and_eval",
+  flags.DEFINE_string("schedule", "train",
                       "Method of Experiment to run.")
   flags.DEFINE_integer("eval_steps", 100,
                        "Number of steps in evaluation. By default, eval will "
@@ -128,7 +130,13 @@ flags.DEFINE_integer("log_step_count_steps", 100,
                      "Number of local steps after which progress is printed "
                      "out")
 
-
+# benchmarking
+flags.DEFINE_integer("benchmark_steps", 0,
+                     "Number of benchmark steps - if 0 normal training will be run")
+flags.DEFINE_integer("benchmark_log_steps", 1,
+                     "Period of benchmark logging in steps - if 0 only final result will be displayed")
+flags.DEFINE_integer("warmup_steps", 10,
+                     "Number of warmup steps before benchmarking, works only if benchmark_steps > 0")
 
 def set_hparams_from_args(args):
   """Set hparams overrides from unparsed args list."""
@@ -192,6 +200,9 @@ def create_experiment_fn():
       use_tpu_estimator=FLAGS.use_tpu_estimator,
       use_xla=FLAGS.xla_compile,
       warm_start_from=FLAGS.warm_start_from,
+      benchmark_steps=FLAGS.benchmark_steps,
+      benchmark_log_steps=FLAGS.benchmark_log_steps,
+      warmup_steps=FLAGS.warmup_steps,
       decode_from_file=FLAGS.decode_from_file,
       decode_to_file=FLAGS.decode_to_file,
       decode_reference=FLAGS.decode_reference,
@@ -208,10 +219,14 @@ def create_run_config(hp, output_dir=None):
   Returns:
     a run config
   """
-  save_ckpt_steps = max(FLAGS.iterations_per_loop, FLAGS.local_eval_frequency)
-  save_ckpt_secs = FLAGS.save_checkpoints_secs or None
-  if save_ckpt_secs:
+  if FLAGS.benchmark_steps > 0:
     save_ckpt_steps = None
+    save_ckpt_secs = None
+  else:
+    save_ckpt_steps = max(FLAGS.iterations_per_loop, FLAGS.local_eval_frequency)
+    save_ckpt_secs = FLAGS.save_checkpoints_secs or None
+    if save_ckpt_secs:
+      save_ckpt_steps = None
   assert FLAGS.output_dir or FLAGS.checkpoint_path
   tpu_config_extra_kwargs = {}
 
@@ -354,7 +369,7 @@ def run_std_server():
 
 
 def main(argv):
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.logging.set_verbosity(FLAGS.log_level)
 
   usr_dir.import_usr_dir(FLAGS.t2t_usr_dir)
 
